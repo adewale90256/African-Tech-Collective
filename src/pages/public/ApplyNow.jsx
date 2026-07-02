@@ -1,6 +1,6 @@
 import { useState } from "react";
-import FounderForm from "../../components/loginforms/FounderForm";
-import InvestorForm from "../../components/loginforms/InvestorForm";
+import FounderForm from "../../components/singupforms/FounderForm";
+import InvestorForm from "../../components/singupforms/InvestorForm";
 import { useSearchParams } from "react-router-dom";
 
 function ApplyNow() {
