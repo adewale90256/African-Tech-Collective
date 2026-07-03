@@ -143,6 +143,7 @@ export default function Login() {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="************"
+                autoComplete="current-password"
                 className="input pr-12 w-full"
               />
 
