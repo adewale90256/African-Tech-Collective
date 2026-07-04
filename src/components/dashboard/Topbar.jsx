@@ -1,10 +1,12 @@
 import { Bell, Menu } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import logout from "../../utils/logout";
 
 function Topbar({ userData, setSidebarOpen }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -94,7 +96,10 @@ function Topbar({ userData, setSidebarOpen }) {
                 Settings
               </button>
 
-              <button className="w-full text-left px-4 py-3 hover:bg-red-600 text-red-300 hover:text-white transition cursor-pointer">
+              <button
+                onClick={() => logout(navigate)}
+                className="w-full text-left px-4 py-3 hover:bg-red-600 text-red-300 hover:text-white transition cursor-pointer"
+              >
                 Logout
               </button>
             </div>

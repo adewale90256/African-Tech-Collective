@@ -10,9 +10,12 @@ import {
   LogOut,
   X,
 } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import logout from "../../utils/logout";
 
 function Sidebar({ userData, sidebarOpen, setSidebarOpen }) {
+  const navigate = useNavigate();
+
   const founderLinks = [
     {
       section: "MAIN",
@@ -192,7 +195,10 @@ function Sidebar({ userData, sidebarOpen, setSidebarOpen }) {
 
           <p className="text-sm text-gray-400 capitalize">{userData?.role}</p>
         </div>
-        <button className="flex items-center gap-3 text-red-400 hover:text-red-300 transition">
+        <button
+          onClick={() => logout(navigate)}
+          className="flex items-center gap-3 text-red-400 hover:text-red-300 transition"
+        >
           <LogOut size={18} />
           <span>Logout</span>
         </button>
