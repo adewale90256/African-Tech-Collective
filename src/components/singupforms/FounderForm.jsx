@@ -1,9 +1,22 @@
 import { useState } from "react";
-import { auth, db } from "../../firebase";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { serverTimestamp } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
+import validatePassword from "../../utils/validatePassword";
+import firebaseErrorHandler from "../../utils/firebaseErrorHandler";
+import signupService from "../../servcies/signupService";
+import validateFounder from "../../utils/founderValidation";
+import useMultiSelect from "../../hooks/useMultiSelect";
+import {
+  founderSectors,
+  founderStages,
+  founderGoals,
+} from "../../constants/founderOptions";
+import { aboutUsOptions } from "../../constants/aboutUsOptions";
 
-function FounderForm() {
+function FounderForm({ selectedPlan }) {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -22,56 +35,39 @@ function FounderForm() {
   });
 
   const [errors, setErrors] = useState({});
-  const [selected, setSelected] = useState([]);
 
-  const sectors = [
-    "FinTech",
-    "HealthTech",
-    "EdTech",
-    "AgriTech",
-    "Logistics",
-    "Enterprise SaaS",
-    "E-commerce",
-    "Climate Tech",
-    "AI",
-    "Others",
-  ];
+  // const sectors = [
+  //   "FinTech",
+  //   "HealthTech",
+  //   "EdTech",
+  //   "AgriTech",
+  //   "Logistics",
+  //   "Enterprise SaaS",
+  //   "E-commerce",
+  //   "Climate Tech",
+  //   "AI",
+  //   "Others",
+  // ];
 
-  const stages = [
-    "Idea/Pre-product",
-    "Pre-seed",
-    "Seed",
-    "Series A",
-    "Growth Stage",
-  ];
+  // const stages = [
+  //   "Idea/Pre-product",
+  //   "Pre-seed",
+  //   "Seed",
+  //   "Series A",
+  //   "Growth Stage",
+  // ];
 
-  const options = [
-    "Investor access",
-    "Mentorship",
-    "Community & peer learning",
-    "Corporate partnership",
-    "Event networking",
-  ];
+  // const options = [
+  //   "Investor access",
+  //   "Mentorship",
+  //   "Community & peer learning",
+  //   "Corporate partnership",
+  //   "Event networking",
+  // ];
 
-  const aboutUs = ["Referral", "Linkedin", "Event", "Google", "Other"];
+  // const aboutUs = ["Referral", "Linkedin", "Event", "Google", "Other"];
 
-  const toggleOption = (option) => {
-    let updatedSelected;
-
-    if (selected.includes(option)) {
-      updatedSelected = selected.filter((item) => item !== option);
-    } else {
-      updatedSelected = [...selected, option];
-    }
-
-    setSelected(updatedSelected);
-
-    setFormData((prev) => ({
-      ...prev,
-
-      options: updatedSelected,
-    }));
-  };
+  const { selected, toggleItem } = useMultiSelect();
 
   const handleChange = (e) => {
     setFormData({
@@ -81,61 +77,12 @@ function FounderForm() {
   };
 
   const validate = () => {
-    let newErrors = {};
+    let newErrors = validateFounder(formData);
 
-    if (!formData.fullName) newErrors.fullName = "Full name is required";
-    if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Enter a valid email";
-    }
-    if (!formData.phone) {
-      newErrors.phone = "Phone is required";
-    } else if (formData.phone.replace(/\D/g, "").length < 10) {
-      newErrors.phone = "Enter a valid phone number";
-    }
-    if (!formData.companyName)
-      newErrors.companyName = "Company name is required";
-
-    if (!formData.linkedin) {
-      newErrors.linkedin = "LinkedIn profile is required";
-    } else if (!formData.linkedin.includes("linkedin.com")) {
-      newErrors.linkedin = "Enter a valid LinkedIn URL";
-    }
-
-    if (!formData.companyWebsite)
-      newErrors.companyWebsite = "Company website is required";
-
-    if (!formData.country) newErrors.country = "Country is required";
-
-    if (!formData.sector) newErrors.sector = "Please select a sector";
-    if (!formData.stage) newErrors.stage = "Please select your stage";
-    if (!formData.description)
-      newErrors.description = "Please tell us about your Company";
-    if (formData.options.length === 0) {
-      newErrors.options = "Select at least one option";
-    }
-    if (!formData.aboutUs) {
-      newErrors.aboutUs = "Please tell us how you heard about us";
-    }
-
-    // Confirm password
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "Please confirm your password";
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
-    }
-
-    //password requirement
-    if (!formData.password) {
-      newErrors.password = "Please create your password";
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters";
-    } else if (!/[A-Z]/.test(formData.password)) {
-      newErrors.password = "Password must contain an uppercase letter";
-    } else if (!/[0-9]/.test(formData.password)) {
-      newErrors.password = "Password must contain a number";
-    }
+    Object.assign(
+      newErrors,
+      validatePassword(formData.password, formData.confirmPassword),
+    );
 
     setErrors(newErrors);
 
@@ -147,65 +94,58 @@ function FounderForm() {
 
     if (!validate()) return;
 
+    if (!selectedPlan) {
+      alert("Please select a membership plan.");
+      return;
+    }
+    setLoading(true);
+
     try {
       //create account in firebase Authentication
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
+      const user = await signupService(
         formData.email,
         formData.password,
+
+        {
+          role: "founder",
+
+          membership: {
+            id: selectedPlan.id,
+            name: selectedPlan.name,
+            price: selectedPlan.price,
+            duration: selectedPlan.duration,
+          },
+
+          status: "pending",
+
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          linkedin: formData.linkedin,
+          companyName: formData.companyName,
+          companyWebsite: formData.companyWebsite,
+          country: formData.country,
+          sector: formData.sector,
+          stage: formData.stage,
+          description: formData.description,
+          options: formData.options,
+          aboutUs: formData.aboutUs,
+          approved: false,
+          createdAt: serverTimestamp(),
+        },
       );
 
-      const user = userCredential.user;
-
-      //save founder details to Firestore
-      await setDoc(doc(db, "users", user.uid), {
-        uid: user.uid,
-        role: "founder",
-
-        fullName: formData.fullName,
-        email: formData.email,
-        phone: formData.phone,
-        linkedin: formData.linkedin,
-        companyName: formData.companyName,
-        companyWebsite: formData.companyWebsite,
-        country: formData.country,
-        sector: formData.sector,
-        stage: formData.stage,
-        description: formData.description,
-        options: formData.options,
-        aboutUs: formData.aboutUs,
-
-        approved: false,
-
-        createdAt: new Date(),
+      navigate("/login", {
+        state: {
+          success: "Application submitted successfully.",
+        },
       });
-
-      alert("Application submitted Successfully");
-
-      setFormData({
-        fullName: "",
-        email: "",
-        phone: "",
-        linkedin: "",
-        companyName: "",
-        companyWebsite: "",
-        country: "",
-        sector: "",
-        stage: "",
-        description: "",
-        options: [],
-        aboutUs: "",
-        password: "",
-        confirmPassword: "",
-      });
-
-      setSelected([]);
-      setErrors([]);
-
       console.log(user);
     } catch (error) {
       console.log(error);
-      alert(error.message);
+      firebaseErrorHandler(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -225,6 +165,7 @@ function FounderForm() {
             value={formData.fullName}
             onChange={handleChange}
             className="input"
+            disabled={loading}
           />
           {errors.fullName && (
             <p className="text-red-400 text-sm">{errors.fullName}</p>
@@ -241,6 +182,7 @@ function FounderForm() {
             value={formData.email}
             onChange={handleChange}
             className="input"
+            disabled={loading}
           />
           {errors.email && (
             <p className="text-red-400 text-sm">{errors.email}</p>
@@ -257,6 +199,7 @@ function FounderForm() {
             value={formData.phone}
             onChange={handleChange}
             className="input"
+            disabled={loading}
           />
           {errors.phone && (
             <p className="text-red-400 text-sm">{errors.phone}</p>
@@ -276,6 +219,7 @@ function FounderForm() {
             onChange={handleChange}
             placeholder="https://linkedin.com/in/your-profile"
             className="input"
+            disabled={loading}
           />
           {errors.linkedin && (
             <p className="text-red-400 text-sm">{errors.linkedin}</p>
@@ -293,6 +237,7 @@ function FounderForm() {
             value={formData.companyName}
             onChange={handleChange}
             className="input"
+            disabled={loading}
           />
           {errors.companyName && (
             <p className="text-red-400 text-sm">{errors.companyName}</p>
@@ -311,6 +256,7 @@ function FounderForm() {
             value={formData.companyWebsite}
             onChange={handleChange}
             className="input"
+            disabled={loading}
           />
           {errors.companyWebsite && (
             <p className="text-red-400 text-sm">{errors.companyWebsite}</p>
@@ -327,6 +273,7 @@ function FounderForm() {
             onChange={handleChange}
             className="input"
             placeholder="Nigeria"
+            disabled={loading}
           />
           {errors.country && (
             <p className="text-red-400 text-sm">{errors.country}</p>
@@ -346,6 +293,7 @@ function FounderForm() {
             className="input"
             placeholder="************"
             autoComplete="new-password"
+            disabled={loading}
           />
           {errors.password && (
             <p className="text-red-400 text-sm">{errors.password}</p>
@@ -363,6 +311,7 @@ function FounderForm() {
             className="input"
             placeholder="************"
             autoComplete="new-password"
+            disabled={loading}
           />
           {errors.confirmPassword && (
             <p className="text-red-400 text-sm">{errors.confirmPassword}</p>
@@ -378,11 +327,12 @@ function FounderForm() {
               value={formData.sector}
               onChange={handleChange}
               className="input text-white bg-[#032774]"
+              disabled={loading}
             >
               <option value="" className="text-white bg-[#032774]">
                 Select sector
               </option>
-              {sectors.map((sector) => (
+              {founderSectors.map((sector) => (
                 <option
                   key={sector}
                   value={sector}
@@ -404,11 +354,12 @@ function FounderForm() {
               value={formData.stage}
               onChange={handleChange}
               className="input text-white bg-[#032774]"
+              disabled={loading}
             >
               <option value="" className="text-white bg-[#032774]">
                 Select stage
               </option>
-              {stages.map((stage) => (
+              {founderStages.map((stage) => (
                 <option
                   key={stage}
                   value={stage}
@@ -437,6 +388,7 @@ function FounderForm() {
             maxLength={300}
             className="input h-40"
             placeholder="Describe your Startup"
+            disabled={loading}
           />
           {errors.description && (
             <p className="text-red-400 text-sm">{errors.description}</p>
@@ -447,14 +399,22 @@ function FounderForm() {
           <h2 className="text-[13px]">What are you seeking from ATC?</h2>
 
           <div className="flex flex-wrap gap-3">
-            {options.map((option) => {
+            {founderGoals.map((option) => {
               const isSelected = selected.includes(option);
 
               return (
                 <button
                   type="button"
                   key={option}
-                  onClick={() => toggleOption(option)}
+                  onClick={() => {
+                    const updated = toggleItem(option);
+
+                    setFormData((prev) => ({
+                      ...prev,
+                      options: updated,
+                    }));
+                  }}
+                  disabled={loading}
                   className={`px-4 py-2 rounded-full border transition-all duration-200 text-[13px] text-sm 
                 ${
                   isSelected
@@ -482,11 +442,12 @@ function FounderForm() {
             value={formData.aboutUs}
             onChange={handleChange}
             className="input text-white bg-[#032774]"
+            disabled={loading}
           >
             <option value="" className="text-white bg-[#032774]">
               Select
             </option>
-            {aboutUs.map((about) => (
+            {aboutUsOptions.map((about) => (
               <option
                 key={about}
                 value={about}
@@ -505,9 +466,15 @@ function FounderForm() {
         {/* Submit */}
         <button
           type="submit"
-          className="bg-amber-400 text-black px-4 py-3 rounded-lg w-full"
+          disabled={loading}
+          className={`w-full rounded-lg px-4 py-3 text-black
+                ${
+                  loading
+                    ? "bg-amber-200 cursor-not-allowed"
+                    : "bg-amber-400 hover:bg-amber-300"
+                }`}
         >
-          Submit Application
+          {loading ? "Creating account..." : "Submit Application"}
         </button>
 
         <p className="text-sm text-[13px] scale-y-110">

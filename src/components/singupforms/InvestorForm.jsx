@@ -1,9 +1,22 @@
 import { useState } from "react";
-import { auth, db } from "../../firebase";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { serverTimestamp } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
+import validatePassword from "../../utils/validatePassword";
+import firebaseErrorHandler from "../../utils/firebaseErrorHandler";
+import signupService from "../../servcies/signupService";
+import validateInvestor from "../../utils/investorValidation";
+import useMultiSelect from "../../hooks/useMultiSelect";
+import {
+  investorSectors,
+  ticketSizes,
+  investmentHistory,
+} from "../../constants/investorOptions";
+import { aboutUsOptions } from "../../constants/aboutUsOptions";
 
-function InvestorForm() {
+function InvestorForm({ selectedPlan }) {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -20,7 +33,7 @@ function InvestorForm() {
     confirmPassword: "",
   });
   const [errors, setErrors] = useState({});
-  const [selected, setSelected] = useState([]);
+  const { selected, toggleItem } = useMultiSelect();
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -30,57 +43,12 @@ function InvestorForm() {
   };
 
   const validate = () => {
-    let newErrors = {};
+    let newErrors = validateInvestor(formData);
 
-    if (!formData.fullName) newErrors.fullName = "Full name is required";
-    if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Enter a valid email";
-    }
-    if (!formData.phone) {
-      newErrors.phone = "Phone is required";
-    } else if (formData.phone.replace(/\D/g, "").length < 10) {
-      newErrors.phone = "Enter a valid phone number";
-    }
-
-    if (!formData.linkedin) {
-      newErrors.linkedin = "LinkedIn profile is required";
-    } else if (!formData.linkedin.includes("linkedin.com")) {
-      newErrors.linkedin = "Enter a valid LinkedIn URL";
-    }
-    if (!formData.organizationName)
-      newErrors.organizationName = "organization or fund name is required";
-    if (!formData.organizationRole)
-      newErrors.organizationRole = "Your Role is required";
-    if (formData.sectors.length === 0) {
-      newErrors.sectors = "Please select at least one sector";
-    }
-    if (!formData.ticketSize)
-      newErrors.ticketSize = "Please select a ticket size";
-
-    if (!formData.startupInvestment)
-      newErrors.startupInvestment = "Please select your focus on investment";
-
-    if (!formData.aboutUs) newErrors.aboutUs = "Please tell us about yourself";
-
-    // Confirm password
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "Please confirm your password";
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
-    }
-
-    //password requirement
-    if (!formData.password) {
-      newErrors.password = "Please create your password";
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters";
-    } else if (!/[A-Z]/.test(formData.password)) {
-      newErrors.password = "Password must contain an uppercase letter";
-    } else if (!/[0-9]/.test(formData.password)) {
-      newErrors.password = "Password must contain a number";
-    }
+    Object.assign(
+      newErrors,
+      validatePassword(formData.password, formData.confirmPassword),
+    );
 
     setErrors(newErrors);
 
@@ -91,105 +59,83 @@ function InvestorForm() {
     e.preventDefault();
     if (!validate()) return;
 
+    if (!selectedPlan) {
+      alert("Please select a membership plan.");
+      return;
+    }
+    setLoading(true);
+
     try {
       //create account in firebase Authentication
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
+      const user = await signupService(
         formData.email,
         formData.password,
+
+        {
+          role: "investor",
+          membership: {
+            id: selectedPlan.id,
+            name: selectedPlan.name,
+            price: selectedPlan.price,
+            duration: selectedPlan.duration,
+          },
+          status: "pending",
+
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          linkedin: formData.linkedin,
+          organizationName: formData.organizationName,
+          organizationRole: formData.organizationRole,
+          sectors: formData.sectors,
+          ticketSize: formData.ticketSize,
+          startupInvestment: formData.startupInvestment,
+          aboutUs: formData.aboutUs,
+          description: formData.description,
+          approved: false,
+          createdAt: serverTimestamp(),
+        },
       );
 
-      const user = userCredential.user;
-
-      //save founder details to Firestore
-      await setDoc(doc(db, "users", user.uid), {
-        uid: user.uid,
-        role: "investor",
-
-        fullName: formData.fullName,
-        email: formData.email,
-        phone: formData.phone,
-        linkedin: formData.linkedin,
-        organizationName: formData.organizationName,
-        organizationRole: formData.organizationRole,
-        sectors: formData.sectors,
-        ticketSize: formData.ticketSize,
-        startupInvestment: formData.startupInvestment,
-        aboutUs: formData.aboutUs,
-        description: formData.description,
-
-        approved: false,
-
-        createdAt: new Date(),
+      navigate("/login", {
+        state: {
+          success: "Application submitted successfully.",
+        },
       });
-      alert("Application submitted Successfully");
-
-      setFormData({
-        fullName: "",
-        email: "",
-        phone: "",
-        linkedin: "",
-        organizationName: "",
-        organizationRole: "",
-        sectors: [],
-        ticketSize: "",
-        startupInvestment: "",
-        aboutUs: "",
-        description: "",
-        password: "",
-        confirmPassword: "",
-      });
-      setSelected([]);
-      setErrors([]);
 
       console.log(user);
     } catch (error) {
-      console.log(error);
-      alert(error.message);
+      console.error(error);
+      firebaseErrorHandler(error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const sectors = [
-    "Fintech",
-    "Healthtech",
-    "Edtech",
-    "Agritech",
-    "Logistics",
-    "SaaS",
-    "E-commerce",
-    "Climate",
-    "Real Estate",
-    "General",
-  ];
+  // const sectors = [
+  //   "Fintech",
+  //   "Healthtech",
+  //   "Edtech",
+  //   "Agritech",
+  //   "Logistics",
+  //   "SaaS",
+  //   "E-commerce",
+  //   "Climate",
+  //   "Real Estate",
+  //   "General",
+  // ];
 
-  const toggleOption = (sector) => {
-    let updated;
+  // const ticketing = [
+  //   "Under $25k",
+  //   "$25k - $100k",
+  //   "$100k - $500k",
+  //   "$500k - $2M",
+  //   "2M+",
+  // ];
 
-    if (selected.includes(sector)) {
-      updated = selected.filter((item) => item !== sector);
-    } else {
-      updated = [...selected, sector];
-    }
+  // const investments = ["None yet", "1 - 3", "4 - 10", "10+"];
 
-    setSelected(updated);
-
-    setFormData((prev) => ({
-      ...prev,
-      sectors: updated,
-    }));
-  };
-
-  const ticketing = [
-    "Under $25k",
-    "$25k - $100k",
-    "$100k - $500k",
-    "$500k - $2M",
-    "2M+",
-  ];
-
-  const investments = ["None yet", "1 - 3", "4 - 10", "10+"];
-
-  const aboutUs = ["Referral", "Linkedin", "Event", "Google", "Other"];
+  // const aboutUs = ["Referral", "Linkedin", "Event", "Google", "Other"];
 
   return (
     <div className="p-5 flex justify-center w-full items-center ">
@@ -210,6 +156,7 @@ function InvestorForm() {
             onChange={handleChange}
             placeholder="Enter your full name"
             className="input"
+            disabled={loading}
           />
           {errors.fullName && (
             <p className="text-red-400 text-sm">{errors.fullName}</p>
@@ -229,6 +176,7 @@ function InvestorForm() {
             onChange={handleChange}
             placeholder="Enter your email address"
             className="input"
+            disabled={loading}
           />
           {errors.email && (
             <p className="text-red-400 text-sm">{errors.email}</p>
@@ -248,6 +196,7 @@ function InvestorForm() {
             onChange={handleChange}
             placeholder="Enter your phone number"
             className="input"
+            disabled={loading}
           />
           {errors.phone && (
             <p className="text-red-400 text-sm">{errors.phone}</p>
@@ -267,6 +216,7 @@ function InvestorForm() {
             onChange={handleChange}
             placeholder="https://linkedin.com/in/your-profile"
             className="input"
+            disabled={loading}
           />
           {errors.linkedin && (
             <p className="text-red-400 text-sm">{errors.linkedin}</p>
@@ -289,6 +239,7 @@ function InvestorForm() {
             onChange={handleChange}
             placeholder="Organization or fund name"
             className="input"
+            disabled={loading}
           />
           {errors.organizationName && (
             <p className="text-red-400 text-sm">{errors.organizationName}</p>
@@ -308,6 +259,7 @@ function InvestorForm() {
             onChange={handleChange}
             placeholder="e.g Managing Director"
             className="input"
+            disabled={loading}
           />
           {errors.organizationRole && (
             <p className="text-red-400 text-sm">{errors.organizationRole}</p>
@@ -327,6 +279,7 @@ function InvestorForm() {
             onChange={handleChange}
             className="input"
             placeholder="************"
+            disabled={loading}
           />
           {errors.password && (
             <p className="text-red-400 text-sm">{errors.password}</p>
@@ -344,6 +297,7 @@ function InvestorForm() {
             onChange={handleChange}
             className="input"
             placeholder="************"
+            disabled={loading}
           />
           {errors.confirmPassword && (
             <p className="text-red-400 text-sm">{errors.confirmPassword}</p>
@@ -354,7 +308,7 @@ function InvestorForm() {
           <h2 className="text-[13px]">Investment Focus - Sector</h2>
 
           <div className="flex flex-wrap gap-3">
-            {sectors.map((sector) => {
+            {investorSectors.map((sector) => {
               const isSelected = selected.includes(sector);
 
               return (
@@ -362,8 +316,16 @@ function InvestorForm() {
                   name="option"
                   type="button"
                   key={sector}
-                  onClick={() => toggleOption(sector)}
+                  onClick={() => {
+                    const updated = toggleItem(sector);
+
+                    setFormData((prev) => ({
+                      ...prev,
+                      sectors: updated,
+                    }));
+                  }}
                   value={formData.sectors}
+                  disabled={loading}
                   className={`px-4 py-2 rounded-full border transition-all duration-200 text-[13px] text-sm 
                 ${
                   isSelected
@@ -391,11 +353,12 @@ function InvestorForm() {
             value={formData.ticketSize}
             onChange={handleChange}
             className="input text-white bg-[#032774]"
+            disabled={loading}
           >
             <option value="" className="text-white bg-[#032774]">
               Select Ticket
             </option>
-            {ticketing.map((ticket) => (
+            {ticketSizes.map((ticket) => (
               <option
                 key={ticket}
                 value={ticket}
@@ -419,11 +382,12 @@ function InvestorForm() {
             value={formData.startupInvestment}
             onChange={handleChange}
             className="input text-white bg-[#032774]"
+            disabled={loading}
           >
             <option value="" className="text-white bg-[#032774]">
               Select
             </option>
-            {investments.map((invest) => (
+            {investmentHistory.map((invest) => (
               <option
                 key={invest}
                 value={invest}
@@ -447,12 +411,13 @@ function InvestorForm() {
             name="aboutUs"
             value={formData.aboutUs}
             onChange={handleChange}
+            disabled={loading}
             className="input text-white bg-[#032774]"
           >
             <option value="" className="text-white bg-[#032774]">
               Select
             </option>
-            {aboutUs.map((about) => (
+            {aboutUsOptions.map((about) => (
               <option
                 key={about}
                 value={about}
@@ -473,6 +438,7 @@ function InvestorForm() {
               value={formData.description}
               onChange={handleChange}
               maxLength={300}
+              disabled={loading}
               className="input h-30"
               placeholder="Brief statement on your approach to Investing"
             />
@@ -486,9 +452,15 @@ function InvestorForm() {
         {/* Submit */}
         <button
           type="submit"
-          className="bg-amber-400 text-black px-4 py-3 rounded-lg w-full"
+          disabled={loading}
+          className={`w-full rounded-lg px-4 py-3 text-black
+              ${
+                loading
+                  ? "bg-amber-200 cursor-not-allowed"
+                  : "bg-amber-400 hover:bg-amber-300"
+              }`}
         >
-          Submit Application
+          {loading ? "Submitting application..." : "Submit Application"}
         </button>
 
         <p className="text-sm text-[13px] scale-y-110">

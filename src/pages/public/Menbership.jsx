@@ -49,7 +49,7 @@ function Menbership() {
             </div>
 
             <Link
-              to="/apply?type=founder"
+              to="/apply?role=founder&membership=basic&founderMembership=basic&investorMembership=standard"
               className="rounded-lg text-center bg-amber-400 px-6 py-3 text-sm font-semibold text-[#041B4A] transition hover:bg-amber-300"
             >
               Apply as Founder
@@ -99,7 +99,7 @@ function Menbership() {
             </div>
 
             <Link
-              to="/apply?type=founder"
+              to="/apply?role=founder&membership=professional&founderMembership=professional&investorMembership=standard"
               className="rounded-lg text-center bg-amber-400 px-6 py-3 text-sm font-semibold text-[#041B4A] transition hover:bg-amber-300"
             >
               Apply as Founder
@@ -147,7 +147,7 @@ function Menbership() {
             </div>
 
             <Link
-              to="/apply?type=investor"
+              to="/apply?role=investor&membership=standard&founderMembership=basic&investorMembership=standard"
               className="rounded-lg text-center bg-amber-400 px-6 py-3 text-sm font-semibold text-[#041B4A] transition hover:bg-amber-300"
             >
               Apply as Investor
@@ -162,7 +162,7 @@ function Menbership() {
             </h1>
 
             <p className="font-light font-serif text-amber-400 mb-5 text-[23px]">
-              ₦120,000,000/yr
+              ₦1,200,000/yr
             </p>
 
             <div className="space-y-3 mb-15">
@@ -197,7 +197,7 @@ function Menbership() {
             </div>
 
             <Link
-              to="/apply?type=investor"
+              to="/apply?role=investor&membership=premium&founderMembership=basic&investorMembership=premium"
               className="rounded-lg text-center bg-amber-400 px-6 py-3 text-sm font-semibold text-[#041B4A] transition hover:bg-amber-300"
             >
               Apply as Investor

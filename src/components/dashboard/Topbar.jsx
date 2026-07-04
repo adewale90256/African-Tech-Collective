@@ -1,5 +1,6 @@
 import { Bell, Menu } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 
 function Topbar({ userData, setSidebarOpen }) {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -55,40 +56,48 @@ function Topbar({ userData, setSidebarOpen }) {
         </div>
 
         {/* Right */}
-        <div className="relative cursor-pointer" ref={dropdownRef}>
-          <button
-            onClick={() => setShowDropdown(!showDropdown)}
-            className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold cursor-pointer"
-          >
-            {userData?.fullName?.charAt(0)?.toUpperCase() || "U"}
-          </button>
+        <div className="flex gap-4">
+          <Link className="p-2 rounded-lg bg-[#102C5C] hover:bg-[#15366E] transition">
+            <Bell size={20} className="text-white" />
+          </Link>
 
-          <div
-            className={`absolute right-0 mt-4 w-56 bg-[#102C5C] rounded-xl border border-[#1E3A5F] shadow-2xl overflow-hidden origin-top-right transform transition-all duration-300 ease-out ${
-              showDropdown
-                ? "opacity-100 translate-y-0 scale-100 pointer-events-auto"
-                : "opacity-0 -translate-y-3 scale-95 pointer-events-none"
-            }`}
-          >
-            <div className="px-4 py-4 border-b border-[#1E3A5F]">
-              <h3 className="text-white font-semibold">{userData?.fullName}</h3>
+          <div className="relative cursor-pointer" ref={dropdownRef}>
+            <button
+              onClick={() => setShowDropdown(!showDropdown)}
+              className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold cursor-pointer"
+            >
+              {userData?.fullName?.charAt(0)?.toUpperCase() || "U"}
+            </button>
 
-              <p className="text-sm text-gray-400 capitalize">
-                {userData?.role}
-              </p>
+            <div
+              className={`absolute right-0 mt-4 w-56 bg-[#102C5C] rounded-xl border border-[#1E3A5F] shadow-2xl overflow-hidden origin-top-right transform transition-all duration-300 ease-out ${
+                showDropdown
+                  ? "opacity-100 translate-y-0 scale-100 pointer-events-auto"
+                  : "opacity-0 -translate-y-3 scale-95 pointer-events-none"
+              }`}
+            >
+              <div className="px-4 py-4 border-b border-[#1E3A5F]">
+                <h3 className="text-white font-semibold">
+                  {userData?.fullName}
+                </h3>
+
+                <p className="text-sm text-gray-400 capitalize">
+                  {userData?.role}
+                </p>
+              </div>
+
+              <button className="w-full text-left px-4 py-3 hover:bg-[#15366E] text-white transition cursor-pointer">
+                My Profile
+              </button>
+
+              <button className="w-full text-left px-4 py-3 hover:bg-[#15366E] text-white transition cursor-pointer">
+                Settings
+              </button>
+
+              <button className="w-full text-left px-4 py-3 hover:bg-red-600 text-red-300 hover:text-white transition cursor-pointer">
+                Logout
+              </button>
             </div>
-
-            <button className="w-full text-left px-4 py-3 hover:bg-[#15366E] text-white transition cursor-pointer">
-              My Profile
-            </button>
-
-            <button className="w-full text-left px-4 py-3 hover:bg-[#15366E] text-white transition cursor-pointer">
-              Settings
-            </button>
-
-            <button className="w-full text-left px-4 py-3 hover:bg-red-600 text-red-300 hover:text-white transition cursor-pointer">
-              Logout
-            </button>
           </div>
         </div>
       </div>

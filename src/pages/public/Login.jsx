@@ -11,6 +11,7 @@ import {
   browserSessionPersistence,
 } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
+import firebaseErrorHandler from "../../utils/firebaseErrorHandler";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -22,6 +23,7 @@ export default function Login() {
   });
 
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
   const validate = () => {
     let newErrors = {};
@@ -55,11 +57,13 @@ export default function Login() {
       [e.target.name]: e.target.value,
     });
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validate()) return;
 
+    setLoading(true);
     // Firebase Authentication will go here
     try {
       await setPersistence(
@@ -103,7 +107,9 @@ export default function Login() {
         navigate("/investor/dashboard");
       }
     } catch (error) {
-      alert(error.message);
+      firebaseErrorHandler(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -129,6 +135,7 @@ export default function Login() {
               onChange={handleChange}
               placeholder="example@gmail.com"
               className="input"
+              disabled={loading}
             />
             {errors.email && (
               <p className="text-red-400 text-sm">{errors.email}</p>
@@ -145,6 +152,7 @@ export default function Login() {
                 placeholder="************"
                 autoComplete="current-password"
                 className="input pr-12 w-full"
+                disabled={loading}
               />
 
               <button
@@ -167,6 +175,7 @@ export default function Login() {
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="accent-amber-400"
+                disabled={loading}
               />
               Remember me
             </label>

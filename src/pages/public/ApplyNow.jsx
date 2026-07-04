@@ -1,14 +1,13 @@
-import { useState } from "react";
 import FounderForm from "../../components/singupforms/FounderForm";
 import InvestorForm from "../../components/singupforms/InvestorForm";
-import { useSearchParams } from "react-router-dom";
+import useMembership from "../../hooks/useMembership";
+import MembershipSummary from "../../components/membership/MembershipSummary";
+import { useNavigate } from "react-router-dom";
 
 function ApplyNow() {
-  const [searchParams] = useSearchParams();
-
-  const [activeTab, setActiveTab] = useState(
-    searchParams.get("type") || "founder",
-  );
+  const navigate = useNavigate();
+  const { activeRole, currentMembership, selectedPlan, switchRole } =
+    useMembership();
 
   return (
     <div className="bg-[#091839] h-100% flex flex-col justify-center items-center">
@@ -25,9 +24,9 @@ function ApplyNow() {
         {/* Tabs */}
         <div className=" flex items-center justify-center gap-2 border-b-[0.5px]  border-gray-600 md:w-170 ">
           <button
-            onClick={() => setActiveTab("founder")}
+            onClick={() => switchRole("founder")}
             className={`px-6 py-3 border-b border-amber-300 transition ${
-              activeTab === "founder"
+              activeRole === "founder"
                 ? " border-yellow-400 text-white"
                 : "border-transparent text-gray-400"
             }`}
@@ -36,9 +35,9 @@ function ApplyNow() {
           </button>
 
           <button
-            onClick={() => setActiveTab("investor")}
+            onClick={() => switchRole("investor")}
             className={`px-6 py-3 border-b border-amber-300 transition ${
-              activeTab === "investor"
+              activeRole === "investor"
                 ? " border-yellow-400 text-white"
                 : "border-transparent text-gray-400"
             }`}
@@ -47,10 +46,28 @@ function ApplyNow() {
           </button>
         </div>
 
-        {/* Form */}
+        <MembershipSummary
+          role={activeRole}
+          selectedPlan={selectedPlan}
+          onChangeMembership={() => navigate("/membership")}
+        />
+
         <div className="p-5 flex flex-col justify-center items-center">
-          {activeTab === "founder" ? <FounderForm /> : <InvestorForm />}
+          {activeRole === "founder" ? (
+            <FounderForm selectedPlan={selectedPlan} />
+          ) : (
+            <InvestorForm selectedPlan={selectedPlan} />
+          )}
         </div>
+
+        {/* Form 
+        <div className="p-5 flex flex-col justify-center items-center">
+          {activeRole === "founder" ? (
+            <FounderForm membership={currentMembership} />
+          ) : (
+            <InvestorForm membership={currentMembership} />
+          )}
+        </div>*/}
       </section>
     </div>
   );

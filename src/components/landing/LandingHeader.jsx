@@ -64,7 +64,7 @@ function LandingHeader() {
           {/* Desktop Buttons */}
           <div className="hidden lg:flex items-center gap-4">
             <Link
-              to="/apply"
+              to="/membership"
               className="rounded-lg bg-amber-400 px-6 py-3 text-sm font-semibold text-[#041B4A] hover:bg-amber-300"
             >
               Apply Now
@@ -99,12 +99,12 @@ function LandingHeader() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 right-0 z-50 h-full w-80 bg-[#091839] border-l border-amber-400 transform transition-transform duration-300 ${
+        className={`fixed top-0 right-0 z-50 h-full w-55 bg-[#091839] border-l border-amber-400 transform transition-transform duration-300 ${
           menuOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#20365f] p-6">
+        <div className="flex items-center justify-between border-b border-[#20365f] h-16.5 p-6">
           <img
             src="/logo/AFRICAN TECH COLLECTIVE logo-12.png"
             alt="Logo"
@@ -154,7 +154,7 @@ function LandingHeader() {
         <div className="absolute bottom-8 left-6 right-6 space-y-4">
           <Link
             onClick={closeMenu}
-            to="/apply"
+            to="/membership"
             className="block rounded-lg bg-amber-400 py-3 text-center font-semibold text-[#041B4A]"
           >
             Apply Now

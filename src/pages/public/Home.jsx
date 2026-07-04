@@ -36,14 +36,14 @@ function Home() {
         <div className=" flex flex-col items-center justify-center gap-4 ">
           <div className="flex justify-between items-center  gap-5">
             <Link
-              to="/apply?type=founder"
+              to="/membership?role=founder"
               className="rounded-lg bg-amber-400 px-6 py-3 text-sm font-semibold text-[#041B4A] transition hover:bg-amber-300"
             >
               Apply as Founder
             </Link>
 
             <Link
-              to="/apply?type=investor"
+              to="/membership?role=investor"
               className="flex items-center justify-center rounded-lg border border-amber-400 px-6 py-3 text-sm font-semibold text-white transition hover:bg-amber-400 hover:text-[#041B4A]"
             >
               Join as Investor <ArrowRight size={20} className="ml-2" />
@@ -268,7 +268,7 @@ function Home() {
             </div>
 
             <Link
-              to="/apply"
+              to="/membership?role=founder"
               className="rounded-lg w-40 bg-amber-400 px-6 py-3 text-sm font-semibold text-[#041B4A] transition hover:bg-amber-300"
             >
               Apply as Founder
@@ -310,7 +310,7 @@ function Home() {
             </div>
 
             <Link
-              to="/login"
+              to="/membership?role=investor"
               className="w-45 flex items-center justify-center rounded-lg border border-amber-400 px-6 py-3 text-sm font-semibold text-white transition hover:bg-amber-400 hover:text-[#041B4A]"
             >
               Join as Investor <ArrowRight size={20} className="ml-2" />
